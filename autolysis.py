@@ -13,21 +13,19 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import numpy as np
 import random
-import os, sys
+import os
+import sys
 import math
-import requests, json, ast
+import requests
+import json
+import ast
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from mpl_toolkits.mplot3d import Axes3D
 
-
-
-
-
 def make_api_call(prompt):
-    #Fetch API key from environment
-
+    # Fetch API key from environment
     try:
         api_key = os.environ['AIPROXY_TOKEN']
     except KeyError:
@@ -38,15 +36,22 @@ def make_api_call(prompt):
         print("API key is missing. Cannot make API call.")
         return None
 
+    # Define API endpoint and headers
     url = "https://aiproxy.sanand.workers.dev/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}",
-               "Content-Type": "application/json"}
-    data = {"model": "gpt-4o-mini",
-            "messages": [
-                {"role": "system", "content": "You are a data analyst."},
-                {"role": "user", "content": prompt}
-            ]}
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You are a data analyst."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
     try:
+        # Make the API call
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()  # Raise an exception for HTTP errors
         return response.json()["choices"][0]["message"]["content"]
@@ -56,7 +61,6 @@ def make_api_call(prompt):
             print(f"Response status code: {e.response.status_code}")
             print(f"Response text: {e.response.text}")
         return None
-
 
 def load_csv(file_path, encodings=None):
     """
@@ -75,40 +79,41 @@ def load_csv(file_path, encodings=None):
 
     for encoding in encodings:
         try:
+            # Attempt to read the CSV with the given encoding
             df = pd.read_csv(file_path, encoding=encoding)
             return df
-        except Exception as e:
-            None
+        except Exception:
+            pass
 
+    # Return an error message if all encodings fail
     return "All attempts to load the file failed. Please check the file format and content."
 
+
+#----------DATA PREPROCESSING-------------------------------------------------------------
 
 
 def analyze_data_for_relationships(df, sample_size=10):
     """Analyzes a dataset by sending a sample to the LLM for variable relationships."""
-    
+
     # Sample the first few rows of the dataframe (or randomly sample if desired)
     sample_data = df.sample(sample_size)
-    
+
     # Convert the sample data to a string for easy consumption by the LLM
     sample_str = sample_data.to_string(index=False)
-    
+
     # Create a prompt asking the LLM to analyze the dataset
     prompt = (
         f"I have a dataset with the following data:\n{sample_str}\n\n"
         "Please analyze the dataset and suggest the most optimal variables (max 8, min 4) whose relationships "
-        "could be studied using correlation heat maps and distribution plots(if numeric),"
-        "clustering analysis (if geographic data e.g. latitudes or longitudes, or catagorical data),"
-         " or time series plots.(for date type data). Provide just a list of those variables with no other surrounding text."
-         "Keep the format of your response strictly like: ['column1', 'column2'] ONLY."
-         "Try to have at least 2 catagorical data types in your response."
+        "could be studied using correlation heat maps and distribution plots (if numeric), "
+        "clustering analysis (if geographic data e.g. latitudes or longitudes, or categorical data), "
+        "or time series plots (for date-type data). Provide just a list of those variables with no other surrounding text. "
+        "Keep the format of your response strictly like: ['column1', 'column2'] ONLY. "
+        "Try to have at least 2 categorical data types in your response."
     )
-    
+
     # Make the API call
     return make_api_call(prompt)
-
-
-
 
 def preprocess_dataframe(df):
     """
@@ -121,7 +126,10 @@ def preprocess_dataframe(df):
         dict: A summary with column metadata and a sample of the data.
     """
 
-    variables = ast.literal_eval(analyze_data_for_relationships(df)) #ask the llm for apropriate variables
+    # Parse the output of the API call to extract relevant variables
+    # Expected format: ['column1', 'column2', ...]
+    #Parse the response string into python list
+    variables = ast.literal_eval(analyze_data_for_relationships(df))
 
     summary = {}
     for column in variables:
@@ -138,9 +146,6 @@ def preprocess_dataframe(df):
         summary[column] = col_summary
 
     return summary
-
-
-
 
 def classify_columns(summary):
     """
@@ -189,7 +194,9 @@ def classify_columns(summary):
     return classifications
 
 
-#--------------------------------------------------------------------------------------------------
+#----------DATA ANALYSIS FUNCTIONS-------------------------------------------------------------
+
+
 def analyze_numerical(df, columns, output_folder):
     """Generates a correlation heatmap for numerical columns with improved spacing and design."""
     if len(columns) < 2:
@@ -221,8 +228,6 @@ def analyze_numerical(df, columns, output_folder):
         os.makedirs(output_folder)
     plt.savefig(f'{output_folder}/correlation_heatmap.png')
     plt.close()
-
-
 
 def analyze_scatterplots(df, columns, output_folder):
     """Generates scatter plots for all possible pairs of numerical columns and saves them as a PNG image."""
@@ -258,7 +263,6 @@ def analyze_scatterplots(df, columns, output_folder):
     plt.tight_layout(pad=2.0)  # Increase padding between subplots
     plt.savefig(f'{output_folder}/scatter_plots.png', dpi=300)  # High resolution
     plt.close()
-
 
 def analyze_categorical_or_geographic(df, columns, output_folder):
     """
@@ -331,24 +335,20 @@ def analyze_categorical_or_geographic(df, columns, output_folder):
         ax.set_zlabel("PCA Component 3")
         ax.set_title("3D Clustering Visualization")
         plt.colorbar(scatter)
-
     plt.tight_layout()
-
+    
     # Save plot to the specified output folder
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
     plt.savefig(f'{output_folder}/clustering_visualization.png')
-
     plt.close()
 
-
 def analyze_time_series(df, time_series_columns, numerical_columns, output_folder):
+    
     """Plots time series graphs for all numerical variables against the time column."""
-
+    
     if not time_series_columns:
         print("No time series columns available for analysis.")
         return
-
+    
     time_column = time_series_columns[0]
 
     # Ensure time column is numeric or convert it to datetime
@@ -391,10 +391,7 @@ def analyze_time_series(df, time_series_columns, numerical_columns, output_folde
     plt.tight_layout()
 
     # Save plot to the specified output folder
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
     plt.savefig(f'{output_folder}/time_series_visualization.png')
-
     plt.close()
 
 
@@ -447,14 +444,11 @@ def plot_numerical_distributions(df, numerical_columns, output_folder):
     plt.tight_layout()
 
     # Save plot to the specified output folder
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
     plt.savefig(f'{output_folder}/numerical_distributions.png')
-
     plt.close()
 
-#----------------------------------------------------------------------------------------
 
+#----------LLM PROMPTING FUNCTIONS-------------------------------------------------------------
 
 
 # Function to sample data and generate an analysis prompt
@@ -507,7 +501,9 @@ def generate_llm_analysis(df, num_rows=100):
 
     return response
 
-#-----------------------------------------------------------------------------------------------------------
+
+#----------CODE TO RUN THE SCRIPT-------------------------------------------------------------
+
 
 # Ensure the script is provided with a dataset argument
 if len(sys.argv) < 2:
@@ -556,11 +552,11 @@ image_files = [
     'correlation_heatmap.png',
     'clustering_visualization.png',
     'time_series_visualization.png',
-    'numerical_distributions.png',
-    'scatter_plots.png'
+    'scatter_plots.png',
+    'numerical_distributions.png'
 ]
 
-# Open the README file in append mode
+# Open the README file in append mode to add images
 with open(file_path, 'a') as f:
     for image_file in image_files:
         try:

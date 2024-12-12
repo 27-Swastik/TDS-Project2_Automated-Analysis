@@ -33,6 +33,6 @@ The dataset comprises a collection of movie ratings and metadata, including the 
 
 By synthesizing these insights and implications, industry stakeholders can craft a more audience-centric approach and improve both film quality and viewer satisfaction across various genres and languages.
 ![correlation_heatmap](correlation_heatmap.png)
-![time_series_visualization](media/time_series_visualization.png)
-![scatter_plots](media/scatter_plots.png)
-![numerical_distributions](media/numerical_distributions.png)
+![time_series_visualization](time_series_visualization.png)
+![scatter_plots](scatter_plots.png)
+![numerical_distributions](numerical_distributions.png)

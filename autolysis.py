@@ -566,8 +566,8 @@ with open(file_path, 'a') as f:
         try:
             image_path = os.path.join(output_folder, image_file)
             if os.path.exists(image_path):
-                f.write(f'![{image_file.split(".")[0]}](media/{image_file})\n')
+                # Write markdown syntax for the image in the md file
+                f.write(f'![{image_file.split(".")[0]}]({image_file})\n')
         except Exception:
             pass  # Skip this file and continue with the next
-
 print(f"README.md file written to {file_path}")

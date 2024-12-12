@@ -224,6 +224,42 @@ def analyze_numerical(df, columns, output_folder):
 
 
 
+def analyze_scatterplots(df, columns, output_folder):
+    """Generates scatter plots for all possible pairs of numerical columns and saves them as a PNG image."""
+    if len(columns) < 2:
+        print("Not enough columns for scatter plot analysis.")
+        return
+
+    # Set up the matplotlib figure with subplots
+    num_plots = len(columns)
+    fig, axes = plt.subplots(nrows=num_plots, ncols=num_plots, figsize=(12, 10))
+    
+    # Loop through each pair of columns and create scatter plots
+    for i in range(num_plots):
+        for j in range(num_plots):
+            ax = axes[i, j]
+            
+            # Skip diagonal (same column vs itself)
+            if i == j:
+                ax.axis('off')
+            else:
+                # Plot scatterplot between columns i and j
+                sns.scatterplot(x=df[columns[i]], y=df[columns[j]], ax=ax, color='royalblue', s=50, alpha=0.7)
+
+                # Set title, and adjust font sizes for readability
+                ax.set_xlabel(columns[i], fontsize=10)
+                ax.set_ylabel(columns[j], fontsize=10)
+                ax.tick_params(axis='both', which='major', labelsize=8)
+
+                # Set grid for better readability
+                ax.grid(True, linestyle='--', alpha=0.5)
+
+    # Adjust layout for better spacing, ensure subplots do not overlap
+    plt.tight_layout(pad=2.0)  # Increase padding between subplots
+    plt.savefig(f'{output_folder}/scatter_plots.png', dpi=300)  # High resolution
+    plt.close()
+
+
 def analyze_categorical_or_geographic(df, columns, output_folder):
     """
     Performs clustering analysis and plots the results,
@@ -471,28 +507,6 @@ def generate_llm_analysis(df, num_rows=100):
 
     return response
 
-
-
-def generate_image_markdown(image_folder):
-    # Get the list of PNG files in the image folder
-    png_files = [f for f in os.listdir(image_folder) if f.endswith('.png')]
-
-    # Generate the Markdown image links
-    image_markdowns = []
-    for image in png_files:
-        image_path = os.path.join(image_folder, image)
-        alt_text = image.split('.')[0]  # Use the file name (without extension) as alt text
-        # Create relative paths for markdown
-        markdown_link = f'![{alt_text}]({image})'  # Remove 'image_folder' to use relative path
-        image_markdowns.append(markdown_link)
-
-    return '\n'.join(image_markdowns)
-
-def write_to_readme(readme_file, image_markdowns):
-    # Open the README file and append the image Markdown
-    with open(readme_file, 'a') as f: 
-        f.write('\n\n' + image_markdowns)
-
 #-----------------------------------------------------------------------------------------------------------
 
 # Ensure the script is provided with a dataset argument
@@ -521,6 +535,7 @@ for data_type, columns in classifications.items():
   if data_type == "Numerical":
     analyze_numerical(df, columns, output_folder)
     plot_numerical_distributions(df, columns, output_folder)
+    analyze_scatterplots(df, columns, output_folder)
   elif data_type in ["Categorical", "Geographic"]:
     analyze_categorical_or_geographic(df, columns, output_folder)
   elif data_type == "Time Series":
@@ -534,7 +549,23 @@ with open(file_path, 'w') as f:
     f.write('''The code begins by loading a dataset, carefully selecting a sample to assess the most relevant relationships between variables. Using this sample, an API call is made to an advanced language model, which identifies key variables that can be further explored through correlation heatmaps, clustering, or time series analysis. With these insights, the data is preprocessed and categorized—distinguishing numerical, categorical, geographic, and time-series columns. Statistical techniques like PCA are applied for dimensionality reduction, and KMeans clustering uncovers hidden patterns. The final result is a series of visualizations—heatmaps, clustering plots, and time series graphs—offering a detailed understanding of the dataset's underlying structure.''')
     f.write("\n")
     f.write(generate_llm_analysis(df))
-# Writing image markdown to README.md
-    write_to_readme("README.md", generate_image_markdown(output_folder))
     
+# List of image files to check
+image_files = [
+    'correlation_heatmap.png',
+    'clustering_visualization.png',
+    'time_series_visualization.png',
+    'numerical_distributions.png'
+]
+
+# Open the README file in append mode
+with open(file_path, 'a') as f:
+    for image_file in image_files:
+        try:
+            image_path = os.path.join(output_folder, image_file)
+            if os.path.exists(image_path):
+                f.write(f'![{image_file.split(".")[0]}](media/{image_file})\n')
+        except Exception:
+            pass  # Skip this file and continue with the next
+
 print(f"README.md file written to {file_path}")

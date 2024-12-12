@@ -555,7 +555,8 @@ image_files = [
     'correlation_heatmap.png',
     'clustering_visualization.png',
     'time_series_visualization.png',
-    'numerical_distributions.png'
+    'numerical_distributions.png',
+    'scatter_plots.png'
 ]
 
 # Open the README file in append mode

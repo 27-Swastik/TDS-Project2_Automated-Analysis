@@ -549,6 +549,7 @@ with open(file_path, 'w') as f:
     f.write('''The code begins by loading a dataset, carefully selecting a sample to assess the most relevant relationships between variables. Using this sample, an API call is made to an advanced language model, which identifies key variables that can be further explored through correlation heatmaps, clustering, or time series analysis. With these insights, the data is preprocessed and categorized—distinguishing numerical, categorical, geographic, and time-series columns. Statistical techniques like PCA are applied for dimensionality reduction, and KMeans clustering uncovers hidden patterns. The final result is a series of visualizations—heatmaps, clustering plots, and time series graphs—offering a detailed understanding of the dataset's underlying structure.''')
     f.write("\n")
     f.write(generate_llm_analysis(df))
+    f.write("\n")
     
 # List of image files to check
 image_files = [

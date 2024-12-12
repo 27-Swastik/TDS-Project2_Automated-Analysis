@@ -32,7 +32,7 @@ The dataset comprises a collection of movie ratings and metadata, including the 
 4. **Continuous Improvement**: The film industry can benefit from audience feedback through regular assessments of film ratings to adapt and respond proactively to viewer expectations and preferences.
 
 By synthesizing these insights and implications, industry stakeholders can craft a more audience-centric approach and improve both film quality and viewer satisfaction across various genres and languages.
-![correlation_heatmap](media/correlation_heatmap.png)
+![correlation_heatmap](correlation_heatmap.png)
 ![time_series_visualization](media/time_series_visualization.png)
 ![scatter_plots](media/scatter_plots.png)
 ![numerical_distributions](media/numerical_distributions.png)

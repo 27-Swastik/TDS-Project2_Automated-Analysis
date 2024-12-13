@@ -523,7 +523,7 @@ os.makedirs(output_folder, exist_ok=True)
 print(f"Output folder created: {output_folder}")
 
 dataset = f"{dataset_name}.csv"
-df = load_csv(dataset)
+df = load_csv(dataset_path)
 classifications = classify_columns(preprocess_dataframe(df))
 
 # Perform analysis based on classification

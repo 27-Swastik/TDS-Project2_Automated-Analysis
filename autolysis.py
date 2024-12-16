@@ -197,14 +197,24 @@ def classify_columns(summary):
 #----------DATA ANALYSIS FUNCTIONS-------------------------------------------------------------
 
 
-def analyze_numerical(df, columns, output_folder):
-    """Generates a correlation heatmap for numerical columns with improved spacing and design."""
-    if len(columns) < 2:
+def analyze_numerical(df, numerical_columns, output_folder):
+    """Generates a correlation heatmap for numerical columns."""
+    # Drop rows with incorrect data (non-numeric entries in specified columns)
+    for col in numerical_columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Handle NaN values by filling them with the mean of their respective columns
+    for col in numerical_columns:
+        if df[col].isna().any():
+            df[col].fillna(df[col].mean(), inplace=True)
+
+    # Ensure there are still enough columns to perform correlation
+    if len(numerical_columns) < 2:
         print("Not enough numerical columns for correlation analysis.")
         return
 
     # Compute the correlation matrix
-    corr_matrix = df[columns].corr()
+    corr_matrix = df[numerical_columns].corr()
 
     # Set up the matplotlib figure with improved size
     plt.figure(figsize=(10, 8))
@@ -229,14 +239,26 @@ def analyze_numerical(df, columns, output_folder):
     plt.savefig(f'{output_folder}/correlation_heatmap.png')
     plt.close()
 
-def analyze_scatterplots(df, columns, output_folder):
+
+def analyze_scatterplots(df, numerical_columns, output_folder):
     """Generates scatter plots for all possible pairs of numerical columns and saves them as a PNG image."""
-    if len(columns) < 2:
+    
+    # Drop rows with incorrect data (non-numeric entries in specified columns)
+    for col in numerical_columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Handle NaN values by filling them with the mean of their respective columns
+    for col in numerical_columns:
+        if df[col].isna().any():
+            df[col].fillna(df[col].mean(), inplace=True)
+            
+    # Check minimum requirement for a scatterplot
+    if len(numerical_columns) < 2:
         print("Not enough columns for scatter plot analysis.")
         return
 
     # Set up the matplotlib figure with subplots
-    num_plots = len(columns)
+    num_plots = len(numerical_columns)
     fig, axes = plt.subplots(nrows=num_plots, ncols=num_plots, figsize=(12, 10))
     
     # Loop through each pair of columns and create scatter plots
@@ -249,11 +271,11 @@ def analyze_scatterplots(df, columns, output_folder):
                 ax.axis('off')
             else:
                 # Plot scatterplot between columns i and j
-                sns.scatterplot(x=df[columns[i]], y=df[columns[j]], ax=ax, color='royalblue', s=50, alpha=0.7)
+                sns.scatterplot(x=df[numerical_columns[i]], y=df[numerical_columns[j]], ax=ax, color='royalblue', s=50, alpha=0.7)
 
                 # Set title, and adjust font sizes for readability
-                ax.set_xlabel(columns[i], fontsize=10)
-                ax.set_ylabel(columns[j], fontsize=10)
+                ax.set_xlabel(numerical_columns[i], fontsize=10)
+                ax.set_ylabel(numerical_columns[j], fontsize=10)
                 ax.tick_params(axis='both', which='major', labelsize=8)
 
                 # Set grid for better readability
@@ -285,15 +307,15 @@ def analyze_categorical_or_geographic(df, columns, output_folder):
     encoded_data = df[columns].apply(lambda col: le.fit_transform(col) if col.dtype == 'object' else col)
 
     # Handle missing values
-    imputer = SimpleImputer(strategy='most_frequent')  # Use 'mean' for numerical data
+    imputer = SimpleImputer(strategy='most_frequent')  # Use 'mode' for missing data
     encoded_data = pd.DataFrame(imputer.fit_transform(encoded_data), columns=columns)
 
     # Handle dimensionality
     n_columns = len(columns)
 
     if n_columns == 1:
-        print(f"Only one column '{columns[0]}' available. Clustering is not meaningful for 1D data.")
-        return
+        data = encoded_data.values
+        print(f"One column '{columns[0]}' available. Clustering the 1D data.")
     elif n_columns == 2:
         # Two columns, no PCA needed
         data = encoded_data.values
@@ -367,6 +389,15 @@ def analyze_time_series(df, time_series_columns, numerical_columns, output_folde
         print("No valid numerical columns available for plotting.")
         return
 
+    # Drop rows with incorrect data (non-numeric entries in specified columns)
+    for col in numerical_columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Handle NaN values by filling them with the mean of their respective columns
+    for col in numerical_columns:
+        if df[col].isna().any():
+            df[col].fillna(df[col].mean(), inplace=True)
+
     # Determine the number of rows and columns for subplots
     num_plots = len(numerical_columns)
     num_rows = (num_plots // 3) + (1 if num_plots % 3 != 0 else 0)
@@ -414,7 +445,15 @@ def plot_numerical_distributions(df, numerical_columns, output_folder):
     if not numerical_columns:
         print("None of the provided columns exist in the DataFrame.")
         return
+    # Drop rows with incorrect data (non-numeric entries in specified columns)
+    for col in numerical_columns:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
+    # Handle NaN values by filling them with the mean of their respective columns
+    for col in numerical_columns:
+        if df[col].isna().any():
+            df[col].fillna(df[col].mean(), inplace=True)
+            
     # If the dataframe has more than 1000 rows, sample it
     if len(df) > 1000:
         print(f"Data has large number of rows, randomly sampling 2000 rows for plotting to save computation time and resources.")
